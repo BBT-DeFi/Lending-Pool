@@ -20,16 +20,18 @@
 var Web3 = require('web3');
 var web3 = new Web3('http://127.0.0.1:9545');
 var abi_contract = require('../build/contracts/Pool_USDT.json')
-var abi_token = require('../build/contracts/USDT.json')
+var abi_token = require('../build/contracts/USDT2.json')
 
-var contractAddress = "0x004E4c4c917Af7e33Ec5CEa31A3341C6c05c034F";
-var tokenAddress ="0x343FaE3269E82221D9a8E53cA6ca784367805aB3";
+var contractAddress = "0x5679f4B95F79DCf19C160fAaf807E9f8eFF2050f";
+var tokenAddress ="0xC0322dF6e4aBe196cAD2e505372975D34C99548e";
 
+//var lender="0x785ed57d25b48a0c5df5f7c89743c172022fe768"; //account1
 var lender="0x785ed57d25b48a0c5df5f7c89743c172022fe768";
-var borrower="0xa3d115561c2ab08b7d00282d6faae6372ecfcd8c";
+var borrower="0xa3d115561c2ab08b7d00282d6faae6372ecfcd8c"; //account2
 
 var tokenObject = new web3.eth.Contract(abi_token.abi, tokenAddress)
 var contractObject = new web3.eth.Contract(abi_contract.abi, contractAddress)
+//var contractObject_2 = new web3.eth.Contract(abi_contract.abi, contractAddress)
 // console.log(contractObject)
 
 async function getBalanceOfToken() {
@@ -37,6 +39,15 @@ async function getBalanceOfToken() {
         var sender = await contractObject.methods.getMsgSender().call();
         var result  = await tokenObject.methods.balanceOf(sender).call()
     console.log(`Token holder: ${sender} Token Address: ${tokenAddress} Balance of Token: ${result}`)
+    return result}
+    catch {console.log("Cannot return balance")}
+}
+
+async function getBalanceOfToken_2(addr) {
+    try {
+        //var sender = await contractObject.methods.getMsgSender().call();
+        var result  = await tokenObject.methods.balanceOf(addr).call()
+    console.log(`Token holder: ${addr} Token Address: ${tokenAddress} Balance of Token: ${result}`)
     return result}
     catch {console.log("Cannot return balance")}
 }
@@ -92,11 +103,24 @@ async function getTotalRepayInterest() {
     return result
 }
 
+async function getAllowance() {
+    var sender = await contractObject.methods.getMsgSender().call();
+    var result  = await tokenObject.methods.allowance(sender, contractAddress).call()
+    console.log(`Allowance: ${result}`)
+    return result
+}
+
+async function approveDeposit(amount) {
+    var sender = await contractObject.methods.getMsgSender().call();
+    await tokenObject.methods.approve(contractAddress, amount).send({from:sender});
+}
+
 async function depositToken(tokenaddr, amount) {
     var tokenaddr = tokenaddr;
     var amount = amount;
     var sender = await contractObject.methods.getMsgSender().call();
-    try {await contractObject.methods.depositToken(tokenaddr, amount).send({from:sender});
+    try {
+        await contractObject.methods.depositToken(tokenaddr, amount).send({from:sender, gasPrice:"10000000000", gas:100000});
         var totalsup = await contractObject.methods.getContractTotalSupply(tokenaddr).call();
     await console.log(`${sender} Deposit ${tokenaddr} into pool for : ${amount} now ${totalsup}`);
     return amount}
@@ -106,6 +130,16 @@ async function depositToken(tokenaddr, amount) {
       }
     // return totalsup
 
+}
+
+async function transferFrom(amount) {
+    try {var sender = await contractObject.methods.getMsgSender().call();
+    var result  = await tokenObject.methods.transferFrom(sender, contractAddress, amount).send({from:sender})
+    console.log(`Transfer: ${result}`)
+    return result}
+    catch(err) {
+        console.log('cannot transfer '+amount+'From '+sender+' because ' + err);
+    }
 }
 
 async function withdrawToken(tokenaddr, amount) {
@@ -147,8 +181,22 @@ async function repayToken(tokenaddr, amount) {
         console.log("Error in Repay Token "+err);
       }
 }
-depositToken(tokenAddress, 100)
- getTotalBorrowAmount()
-// getBorrowBalance()
-//getHealthFactor()
+
+async function getEtherBalance(lenderaddr){
+    var etherBalance = await web3.eth.getBalance(lenderaddr)
+    console.log(etherBalance)
+ }
+ 
+approveDeposit(100)
+// //  getTotalBorrowAmount()
+// // // getBorrowBalance()
+// // //getHealthFactor()
+// // getBalanceOfToken()
+// getEtherBalance(lender)
+getAllowance()
+
+//getBalanceOfToken_2("0x785ed57d25b48a0c5df5f7c89743c172022fe768")
+transferFrom(1)
+//depositToken(tokenAddress, 100)
 getBalanceOfToken()
+
