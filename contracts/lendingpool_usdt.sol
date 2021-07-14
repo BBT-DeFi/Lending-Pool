@@ -145,6 +145,7 @@ contract Pool_USDT {
         
         require(found, "Lender cannot be found in pool");
         require(lenders[msg.sender]._balanceinpool != 0, "No balance in pool");
+        require(lenders[msg.sender]._balanceinpool >= amount , "Amount is less than balance in pool");
         
         
         tokens[token]-=amount;
@@ -283,7 +284,9 @@ contract Pool_USDT {
             // event Borrow(address indexed _from, uint _amountborrow, uint _amounttorepay, uint _promisingrepaydate, uint timestamp);
          _totalborrowamount +=amounttorepay;
         emit Borrow(msg.sender, amount, amounttorepay, (block.timestamp)+interval*1 days, block.timestamp);
-        IERC20(token).transferFrom(address(this), msg.sender, amount);
+        //IERC20(token).transferFrom(address(this), msg.sender, amount);
+        IERC20(token).transfer(msg.sender, amount);
+
     }
     
     function repayToken(address token, uint256 amount) public {
@@ -291,7 +294,7 @@ contract Pool_USDT {
         //recalculate healthfactor
         borrowers[msg.sender]._healthfactor = recalculateHealthFactor(msg.sender, amount);
         
-        require(IERC20(token).balanceOf(msg.sender)>amount, "Not enough balanceo of token to repay ");
+        require(IERC20(token).balanceOf(msg.sender)>=amount, "Not enough balanceo of token to repay ");
         IERC20(token).transfer(address(this), amount);
         borrowers[msg.sender]._borrowbalance -= amount;
         
